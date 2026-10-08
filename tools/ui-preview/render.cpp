@@ -150,6 +150,21 @@ int main(int argc, char** argv) {
     ps4_launcher_toast("Sample Platformer now has its own settings");
     DrawFrame(0);
     Shot("02-games-scrolled");
+    g_toast[0] = 0;
+    ps4_launcher_set_layout(kLayoutRow, -1);
+    ps4_launcher_set_state(0, 2, 0);
+    Settle();
+    Shot("02b-games-row");
+    ps4_launcher_set_layout(kLayoutRow, kShortcutBackup);
+    Settle();
+    Shot("02c-games-row-shortcuts");
+    ps4_launcher_set_layout(kLayoutRow, -1);
+    for (int i = 3; i <= 9; i++) { // walk right: the row scrolls once the selection reaches the edge
+        ps4_launcher_set_state(0, i, 0);
+        Settle();
+    }
+    Shot("02d-games-row-scrolled");
+    ps4_launcher_set_layout(kLayoutGrid, -1);
     {
         const auto t0 = std::chrono::steady_clock::now();
         for (int i = 0; i < 100; i++)

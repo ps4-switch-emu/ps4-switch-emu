@@ -84,6 +84,8 @@ void ps4_launcher_set_settings(const Ps4LauncherSetting* s, int n) {
 }
 void ps4_launcher_set_state(int tab, int game, int row) { g_tab = tab; g_game = game; g_row = row; }
 void ps4_launcher_set_info(int, bool) {}
+int g_layout = -1, g_shortcut = -1;
+void ps4_launcher_set_layout(int layout, int shortcut) { g_layout = layout; g_shortcut = shortcut; }
 void ps4_launcher_show(bool) {}
 void ps4_launcher_set_loading(const char*, const uint32_t*) {}
 void ps4_launcher_set_scope(const char* t, bool) { g_scope = t; }
@@ -253,6 +255,23 @@ int main() {
         printf("    %-16s title \"%s\", icon %zu bytes\n", nro, assets.title.c_str(), assets.icon_jpeg.size());
         Check(ok && !assets.title.empty(), "title read (icon optional: our test programs have none)");
     }
+
+    printf("10. Console-row layout: switch it on, back up saves from the shortcuts, start the 2nd game\n");
+    std::system(("rm -rf '" + g_root + "/data/switch-emu/save-backups'").c_str());
+    // R1, Down x4 (Games layout), Cross (Console row), L1, Down (shortcuts: Settings), Right x2
+    // (Back up saves), Cross, Up (games), Right, Cross (start).
+    Script({R1, Down, Down, Down, Down, X, L1, Down, Right, Right, X, Up, Right, X});
+    ps4_menu_run();
+    Check(Read("/data/switch-emu/launcher.txt") == "layout 1\n", "launcher.txt: layout 1");
+    Check(g_layout == 1 && g_shortcut == -1, "row layout shown, back on the games");
+    bool backed_up_again = false;
+    if (DIR* d = ::opendir((g_root + "/data/switch-emu/save-backups").c_str())) {
+        while (dirent* e = readdir(d))
+            backed_up_again |= e->d_name[0] != '.';
+        closedir(d);
+    }
+    Check(backed_up_again, "Back up saves shortcut made a backup");
+    Check(g_game == 1, "Right then Cross starts the second game");
 
     printf("\n%s (%s)\n", g_failures ? "FAILED" : "all passed", g_root.c_str());
     return g_failures ? 1 : 0;

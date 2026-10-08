@@ -7,8 +7,8 @@ played with a DualShock 4. It is a port of the [Eden](https://git.eden-emu.dev/e
 emulator, with a console launcher built for the TV.
 
 <p align="center">
-  <img src="docs/images/01-games.png" width="49%" alt="Games library">
-  <img src="docs/images/03-settings.png" width="49%" alt="Settings">
+  <img src="docs/images/01-games.png" width="49%" alt="Games library as a grid">
+  <img src="docs/images/02b-games-row.png" width="49%" alt="Games library as one row, console style">
 </p>
 
 > [!WARNING]
@@ -88,8 +88,12 @@ it. **Settings → Setup** shows whether the keys and firmware were found.
 ### Launcher
 
 <p align="center">
+  <img src="docs/images/03-settings.png" width="49%" alt="Settings">
   <img src="docs/images/08-loading.png" width="49%" alt="Loading screen">
+</p>
+<p align="center">
   <img src="docs/images/05a-settings-debug.png" width="49%" alt="Debug settings">
+  <img src="docs/images/05b-settings-setup.png" width="49%" alt="Setup: keys and firmware">
 </p>
 
 | Button | Games tab | Settings tab |
@@ -101,14 +105,21 @@ it. **Settings → Setup** shows whether the keys and firmware were found.
 | L1 / R1 | Switch tabs | Switch tabs |
 | Circle | | Back to Games |
 
-Titles and icons appear after a game's first start. Until then the launcher shows the file name
-and a coloured tile with initials. Recently played games move to the front.
+Each game's name and icon are read from its file when the app starts (the first time only, so
+later starts are quick). Recently played games move to the front.
+
+The library comes in two layouts (**Settings → Display → Games layout**):
+
+- **Grid:** 24 games at a time.
+- **Console row:** one row of large tiles with the selected game's name above, like a console's
+  home screen. **Down** reaches round shortcuts for Settings, installing updates and DLC, and
+  backing up saves.
 
 ### Settings
 
 | Section | Settings |
 |---|---|
-| Display | Graphics, Console mode (Docked / Handheld), Resolution, GPU accuracy |
+| Display | Graphics, Console mode (Docked / Handheld), Resolution, GPU accuracy, Games layout |
 | Controls | Button layout (Switch positions, or Cross = A) |
 | Performance | Spread game threads, Multi-core, Fastmem, CPU accuracy, Async shaders |
 | Debug | Profiler, Performance overlay, Overlay position |
