@@ -98,7 +98,7 @@ int main(int argc, char** argv) {
         library.push_back({names[i], details[i].c_str(), i == 0 ? smb.data() : homebrew ? hb.data() : nullptr});
     }
     ps4_launcher_set_games(library.data(), int(library.size()));
-    ps4_launcher_set_info("Setup:  prod.keys found,  title.keys found,  firmware installed (234 files)", 1, true);
+    ps4_launcher_set_info(1, true);
 
     const char* kGraphicsHelp = "Vulkan draws the game on the PS4's GPU. Off runs without graphics and shows this "
                                 "status screen instead (CPU tests).";
@@ -123,6 +123,8 @@ int main(int argc, char** argv) {
         S("Run all benchmarks", "Start", "x", "Tools", kSettingAction),
         S("Install updates and DLC", "1 file", "x", "Tools", kSettingAction),
         S("Back up saves", "Done: 12 files", kBackupHelp, "Tools", kSettingAction),
+        S("Keys", "Found", "prod.keys and title.keys, dumped from your own Switch, go in /data/switch-emu/keys. Dump them after updating the Switch to the firmware you use here. Cross checks again.", "Setup", kSettingText),
+        S("Firmware", "Installed (234 files)", "The Switch firmware dumped from your own console: copy its .nca files, loose, into the folder nand/system/Contents/registered inside /data/switch-emu. Cross checks again.", "Setup", kSettingText),
     };
     std::vector<Ps4LauncherSetting> game = {
         S("Graphics", "Vulkan", kGraphicsHelp, "Display", kSettingChoice),
@@ -173,13 +175,17 @@ int main(int argc, char** argv) {
     DrawFrame(0);
     Shot("05-settings-tools");
     g_toast[0] = 0;
+    ps4_launcher_set_state(1, 0, int(all.size()) - 1);
+    Settle();
+    Shot("05b-settings-setup");
     ps4_launcher_set_settings(game.data(), int(game.size()));
     ps4_launcher_set_scope("Sample Platformer  (own settings)", true);
     ps4_launcher_set_state(1, 0, 1);
     Settle();
     Shot("06-settings-this-game");
     ps4_launcher_set_games(library.data(), 0);
-    ps4_launcher_set_info("Setup:  prod.keys MISSING,  title.keys missing,  firmware MISSING (0 files)", 0, false);
+    ps4_launcher_set_info(0, false);
+    ps4_launcher_toast("Keys missing - see Settings > Setup");
     ps4_launcher_set_state(0, 0, 0);
     Settle();
     Shot("07-empty-library");

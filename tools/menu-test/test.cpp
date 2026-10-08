@@ -83,7 +83,7 @@ void ps4_launcher_set_settings(const Ps4LauncherSetting* s, int n) {
     }
 }
 void ps4_launcher_set_state(int tab, int game, int row) { g_tab = tab; g_game = game; g_row = row; }
-void ps4_launcher_set_info(const char*, int, bool) {}
+void ps4_launcher_set_info(int, bool) {}
 void ps4_launcher_show(bool) {}
 void ps4_launcher_set_loading(const char*, const uint32_t*) {}
 void ps4_launcher_set_scope(const char* t, bool) { g_scope = t; }
@@ -205,8 +205,9 @@ int main() {
                           "/data/switch-emu/nand/user/save/0000000000000000"})
         ::mkdir((g_root + d).c_str(), 0777);
     Touch("/data/switch-emu/nand/user/save/0000000000000000/save.bin");
-    // R1, Up (wraps to Back up saves, the last row), Cross, L1, Cross (start).
-    Script({R1, Up, X, L1, X});
+    // R1, Up x3 (wraps to the last row, Firmware, then up past Keys to Back up saves), Cross, L1,
+    // Cross (start).
+    Script({R1, Up, Up, Up, X, L1, X});
     ps4_menu_run();
     bool backed_up = false;
     if (DIR* d = ::opendir((g_root + "/data/switch-emu/save-backups").c_str())) {

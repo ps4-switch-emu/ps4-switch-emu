@@ -81,7 +81,7 @@ Copy these into the app's folders on the PS4 (over FTP, for example):
 | Updates and DLC (`.nsp`) to install | `/data/switch-emu/install/` |
 
 Dump the keys **after** updating the Switch to the firmware you dump, so they are new enough for
-it. The line at the bottom of the launcher shows whether the keys and firmware were found.
+it. **Settings → Setup** shows whether the keys and firmware were found.
 
 ## Using it
 
@@ -113,6 +113,7 @@ and a coloured tile with initials. Recently played games move to the front.
 | Performance | Spread game threads, Multi-core, Fastmem, CPU accuracy, Async shaders |
 | Debug | Profiler, Performance overlay, Overlay position |
 | Tools | Run all benchmarks, Install updates and DLC, Back up saves |
+| Setup | Whether your keys and firmware were found, and where they go |
 
 Each setting has help text beside it. Settings can be set for all games, or for one game only
 (press Square on a game). For a slow game, try **Console mode: Handheld** (720p instead of 1080p)
