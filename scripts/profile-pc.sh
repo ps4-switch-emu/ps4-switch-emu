@@ -4,9 +4,12 @@
 # to find slow paths in the emulator's own code without the console. Inside the container, which
 # needs perf_event_open:
 #   EDENPS4_RUN_ARGS="--security-opt seccomp=unconfined" docker/run.sh scripts/profile-pc.sh \
-#       /build/pc-data/Game.nsp [boot seconds] [profile seconds] [button script]
+#       /build/pc-data/Game.nsp [boot seconds] [profile seconds] [button script] [gfx]
 # A button script (tools/autopress/*.txt, see StartAutopress in yuzu.cpp) plays the game without a
-# controller, so the profile can cover gameplay rather than the title screen.
+# controller, so the profile can cover gameplay rather than the title screen. "gfx" renders with
+# Mesa's software Vulkan (llvmpipe, off-screen) instead of no graphics - some games wait for the
+# GPU (e.g. cutscenes) - and saves a screenshot every 5 s in /build/pc-shots; llvmpipe's own
+# threads show up separately in the profile.
 # Keys and firmware go in /build/pc-bench-home/data/eden (keys/, nand/system/Contents/registered/).
 # Prints the busiest threads and functions; the raw profile stays in /build/pc-profile.data.
 set -euo pipefail
@@ -16,15 +19,25 @@ SECONDS_PROFILED="${3:-30}"
 if [ -n "${4:-}" ]; then
     export EDEN_AUTOPRESS="$4"
 fi
+GFX="${5:-}"
 EDEN=/build/build/eden-linux/bin/eden-cli
 export HOME=/build/pc-bench-home XDG_DATA_HOME=/build/pc-bench-home/data XDG_CONFIG_HOME=/build/pc-bench-home/config
-export EDEN_NULL_RENDERER=1 EDEN_FORCE_PT_SIGN_EXTENSION=1
+export EDEN_FORCE_PT_SIGN_EXTENSION=1
+if [ "$GFX" = gfx ]; then
+    export SDL_VIDEO_DRIVER=offscreen EDEN_SCREENSHOTS=/build/pc-shots
+    rm -rf /build/pc-shots && mkdir -p /build/pc-shots
+else
+    export EDEN_NULL_RENDERER=1
+fi
 CFG="$XDG_CONFIG_HOME/eden/sdl2-config.ini"
 
 PERF="$(ls /usr/lib/linux-tools-*/perf 2>/dev/null | head -1 || true)"
 if [ -z "$PERF" ]; then # the container is thrown away afterwards: install perf each time
     apt-get update -qq >/dev/null && apt-get install -y -qq linux-tools-generic >/dev/null
     PERF="$(ls /usr/lib/linux-tools-*/perf | head -1)"
+fi
+if [ "$GFX" = gfx ] && [ ! -f /usr/share/vulkan/icd.d/lvp_icd.json ]; then
+    apt-get install -y -qq mesa-vulkan-drivers >/dev/null
 fi
 
 # The PS4 build's settings; warnings only (logging every service call would skew the profile).
@@ -35,6 +48,12 @@ set_cfg use_multi_core true
 set_cfg cpu_accuracy 0
 set_cfg cpuopt_unsafe_host_mmu true
 set_cfg log_filter '"*:Warning"'
+if [ "$GFX" = gfx ]; then
+    set_cfg backend 1       # Vulkan
+    set_cfg vulkan_device 0 # llvmpipe: the only Vulkan device in the container
+else
+    set_cfg backend 2       # no graphics
+fi
 set_cfg output_engine null # no audio device in the container; the null sink still runs the audio
 
 # perf starts eden-cli itself (attaching to a running process needs privileges the build box's
