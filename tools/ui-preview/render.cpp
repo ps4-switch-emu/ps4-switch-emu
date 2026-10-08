@@ -143,6 +143,53 @@ int main(int argc, char** argv) {
         S("Use the settings for all games", "Reset", "Removes this game's own settings; it then follows the settings for all games again.", "This game", kSettingAction),
     };
     ps4_launcher_show(true);
+    if (getenv("BENCH")) { // BENCH=1: time each launcher screen instead of taking screenshots
+        // Real icons on every card (the worst case: icon scaling and copying, not plain tiles).
+        for (auto& game : library)
+            if (!game.icon)
+                game.icon = smb.data();
+        ps4_launcher_set_games(library.data(), int(library.size()));
+        ps4_launcher_set_settings(all.data(), int(all.size()));
+        ps4_launcher_set_info(1, true);
+        const char* only = getenv("BENCH_ONLY"); // a scenario name prefix, for profiling one
+        const auto bench = [only](const char* name, auto&& each_frame) {
+            if (only && strncmp(name, only, strlen(only)) != 0)
+                return;
+            for (int i = 0; i < 10; i++) { // warm up: caches, settled animations
+                each_frame(i);
+                DrawFrame(0);
+            }
+            static const int kFrames = getenv("BENCH_FRAMES") ? atoi(getenv("BENCH_FRAMES")) : 120;
+            const auto t0 = std::chrono::steady_clock::now();
+            for (int i = 0; i < kFrames; i++) {
+                each_frame(i);
+                DrawFrame(0);
+            }
+            const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+            printf("%-34s %6.2f ms per frame\n", name, ms / kFrames);
+        };
+        ps4_launcher_set_layout(kLayoutGrid, -1);
+        bench("grid, still", [](int) { ps4_launcher_set_state(0, 3, 0); });
+        bench("grid, moving every frame", [](int i) { ps4_launcher_set_state(0, 3 + (i / 4) % 2, 0); });
+        ps4_launcher_set_layout(kLayoutRow, -1);
+        bench("row, still", [](int) { ps4_launcher_set_state(0, 3, 0); });
+        bench("row, moving every frame", [](int i) { ps4_launcher_set_state(0, 3 + (i / 4) % 2, 0); });
+        bench("row, shortcuts moving", [](int i) { ps4_launcher_set_layout(kLayoutRow, (i / 4) % 3); });
+        ps4_launcher_set_layout(kLayoutGrid, -1);
+        bench("settings, still", [](int) { ps4_launcher_set_state(1, 0, 5); });
+        bench("settings, moving every frame", [](int i) { ps4_launcher_set_state(1, 0, 5 + (i / 4) % 2); });
+        bench("page cross-fade (worst frame)", [](int i) {
+            ps4_launcher_set_state(i % 2, 3, 5); // a tab change every frame: snapshot + blend
+        });
+        ps4_launcher_set_state(0, 3, 0);
+        bench("launch zoom", [](int i) {
+            if (i == 0)
+                g_launch_snapped = false;
+            g_launch_t0 = Elapsed() - 0.15; // partway, every frame
+        });
+        g_launch_t0 = -1;
+        return 0;
+    }
 
     ps4_launcher_set_state(0, 0, 0);
     Settle();
