@@ -87,6 +87,7 @@ void ps4_launcher_set_info(int, bool) {}
 int g_layout = -1, g_shortcut = -1;
 void ps4_launcher_set_layout(int layout, int shortcut) { g_layout = layout; g_shortcut = shortcut; }
 void ps4_launcher_show(bool) {}
+void ps4_launcher_launch() {}
 void ps4_launcher_set_loading(const char*, const uint32_t*) {}
 void ps4_launcher_set_scope(const char* t, bool) { g_scope = t; }
 void ps4_launcher_toast(const char* t) { printf("    toast: %s\n", t); }

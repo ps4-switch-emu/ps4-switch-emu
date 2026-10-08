@@ -205,6 +205,21 @@ int main(int argc, char** argv) {
     Settle();
     Shot("07-empty-library");
 
+    // The launch zoom, partway: from the grid's selected card toward the loading screen's.
+    ps4_launcher_show(true);
+    ps4_launcher_set_games(library.data(), int(library.size()));
+    ps4_launcher_set_info(1, true);
+    ps4_launcher_set_layout(kLayoutGrid, -1);
+    ps4_launcher_set_state(0, 0, 0);
+    Settle();
+    g_launch_snapped = false;
+    g_launch_t0 = Elapsed();
+    for (int i = 0; i < 7; i++) {
+        DrawFrame(0);
+        std::this_thread::sleep_for(std::chrono::milliseconds(16));
+    }
+    Shot("08a-launch-zoom");
+    g_launch_t0 = -1;
     ps4_launcher_set_loading("Sample Platformer", smb.data());
     std::vector<uint32_t> fb(size_t(kWidth) * kHeight);
     ps4_status_render_loading(fb.data(), kWidth, "Building shaders from the cache: 120 of 431");
@@ -226,8 +241,18 @@ int main(int argc, char** argv) {
     Ps4HomeMenu menu{"Sample Platformer", "Frame rate: 58 fps (last 5 s)", items, 4, 0};
     std::vector<uint32_t> out(size_t(kWidth) * kHeight);
     ps4_status_draw_home(out.data(), fb.data(), kWidth, &menu, true);
+    for (int i = 0; i < 30 && ps4_status_home_animating(); i++) { // the panel rising in
+        std::this_thread::sleep_for(std::chrono::milliseconds(16));
+        ps4_status_draw_home(out.data(), fb.data(), kWidth, &menu, false);
+    }
     memcpy(g_frame, out.data(), kFrameBytes);
     Shot("09-home-menu");
+    menu.selected = 2; // the highlight gliding down two items: a frame partway
+    ps4_status_draw_home(out.data(), fb.data(), kWidth, &menu, false);
+    std::this_thread::sleep_for(std::chrono::milliseconds(40));
+    ps4_status_draw_home(out.data(), fb.data(), kWidth, &menu, false);
+    memcpy(g_frame, out.data(), kFrameBytes);
+    Shot("09b-home-menu-moving");
 
     // Performance overlay stamped onto the stand-in game frame (as the GPU copy does).
     {
