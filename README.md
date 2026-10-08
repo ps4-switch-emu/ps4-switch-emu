@@ -125,6 +125,7 @@ The library comes in two layouts (**Settings → Display → Games layout**):
 | Debug | Profiler, Performance overlay, Overlay position |
 | Tools | Run all benchmarks, Install updates and DLC, Back up saves |
 | Setup | Whether your keys and firmware were found, and where they go |
+| About | The app's version and your PS4's firmware (include both in bug reports) |
 
 Each setting has help text beside it. Settings can be set for all games, or for one game only
 (press Square on a game). For a slow game, try **Console mode: Handheld** (720p instead of 1080p)
@@ -190,7 +191,7 @@ Each step runs in the container through `docker/run.sh`. The first run builds th
 docker/run.sh scripts/setup-toolchain.sh   # PS4 sysroot: libc++ 21 and runtime (once)
 docker/run.sh scripts/build-mesa.sh        # Vulkan driver for the PS4 GPU (once)
 docker/run.sh scripts/build-eden.sh        # the emulator (re-run after changes)
-docker/run.sh scripts/package-eden.sh 01.00
+docker/run.sh scripts/package-eden.sh 0.1.0   # a release; test builds use 00.NN
 ```
 
 The package lands in `out/`. Build trees and downloads are kept in a container volume named

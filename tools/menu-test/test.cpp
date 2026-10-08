@@ -208,9 +208,9 @@ int main() {
                           "/data/switch-emu/nand/user/save/0000000000000000"})
         ::mkdir((g_root + d).c_str(), 0777);
     Touch("/data/switch-emu/nand/user/save/0000000000000000/save.bin");
-    // R1, Up x3 (wraps to the last row, Firmware, then up past Keys to Back up saves), Cross, L1,
-    // Cross (start).
-    Script({R1, Up, Up, Up, X, L1, X});
+    // R1, Up x5 (wraps to the last row, PS4 firmware, then up past Version, Firmware and Keys to
+    // Back up saves), Cross, L1, Cross (start).
+    Script({R1, Up, Up, Up, Up, Up, X, L1, X});
     ps4_menu_run();
     bool backed_up = false;
     if (DIR* d = ::opendir((g_root + "/data/switch-emu/save-backups").c_str())) {

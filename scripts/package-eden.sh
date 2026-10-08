@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Packages the built eden-cli as a PS4 fake-PKG (inside the container):
-#   docker/run.sh scripts/package-eden.sh [version XX.YY]
+#   docker/run.sh scripts/package-eden.sh 00.66     a test build, shown as v00.66
+#   docker/run.sh scripts/package-eden.sh 0.1.0     a release, shown as v0.1.0
+# The PKG itself needs an XX.YY version: a release M.m.p becomes (M+1).(m)(p) - 0.1.0 is 01.10 -
+# so releases sort above every 00.xx test build and later releases above earlier ones.
 # Output: /work/out/<content id>.pkg (the out/ folder in the project, so it's reachable outside the container).
 #
 # Identity follows DolphinPS4's Vulkan build: plain homebrew PAID 0x3800000000000035 and plain
@@ -10,7 +13,15 @@ set -euo pipefail
 DPS4=/work/vendor/DolphinPS4
 BUILD=/build/build/eden
 ELF="$BUILD/bin/eden-cli"
-VERSION="${1:-00.01}"
+VERSION="${1:-00.01}" # what Settings > About shows (without the v)
+if [[ "$VERSION" =~ ^([0-9]+)\.([0-9])\.([0-9])$ ]]; then
+    APP_VER="$(printf '%02d.%d%d' $((BASH_REMATCH[1] + 1)) "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}")"
+elif [[ "$VERSION" =~ ^[0-9]{2}\.[0-9]{2}$ ]]; then
+    APP_VER="$VERSION"
+else
+    echo "version must be XX.YY (test build) or M.m.p with single-digit m and p (release): $VERSION" >&2
+    exit 1
+fi
 TITLE_ID=SWEM00001
 STAGE=/build/build/eden-stage
 WORK=/build/build/eden-fself
@@ -26,10 +37,11 @@ OO_PS4_TOOLCHAIN="$OPENORBIS" "$OPENORBIS/bin/create-fself-git" -in="$ELF" -out=
 # PacBrew's create-fself sometimes duplicates the data segment; the console then refuses the app.
 cmake -DOELF="$WORK/eden-cli.oelf" -P "$DPS4/toolchain/check-oelf.cmake"
 cp "$WORK/eboot.bin" "$STAGE/eboot.bin"
+echo "$VERSION" > "$STAGE/version.txt" # shown in Settings > About (read from /app0)
 
 # Icon: the project's logo (assets/icon.svg: square, the PS4 rounds the corners itself), 512x512 PNG.
 rsvg-convert -w 512 -h 512 -o "$STAGE/sce_sys/icon0.png" /work/assets/icon.svg
 
-PKG="$(SFO_STYLE=plain NO_RIGHT_SPRX=1 "$DPS4/scripts/make-pkg.sh" "$STAGE" "$TITLE_ID" "PS4 Switch Emu" "$VERSION" SWITCHEMU /work/out | tail -1)"
+PKG="$(SFO_STYLE=plain NO_RIGHT_SPRX=1 "$DPS4/scripts/make-pkg.sh" "$STAGE" "$TITLE_ID" "PS4 Switch Emu" "$APP_VER" SWITCHEMU /work/out | tail -1)"
 mkdir -p /build/oelf && cp "$WORK/eden-cli.oelf" "/build/oelf/eden-cli-v$VERSION.oelf" && cp "$ELF" "/build/oelf/eden-cli-v$VERSION.elf" # symbolizing samples.log
 ls -la "$PKG"

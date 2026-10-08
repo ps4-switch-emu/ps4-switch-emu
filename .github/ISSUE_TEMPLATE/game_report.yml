@@ -30,7 +30,7 @@ body:
     id: setup
     attributes:
       label: App version, console and settings
-      placeholder: v0.1.0, PS4 Pro, Handheld + Spread game threads On
+      placeholder: v0.1.0 (Settings > About), PS4 Pro, Handheld + Spread game threads On
     validations:
       required: true
   - type: textarea

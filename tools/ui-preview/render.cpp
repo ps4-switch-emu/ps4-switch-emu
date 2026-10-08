@@ -125,6 +125,8 @@ int main(int argc, char** argv) {
         S("Back up saves", "Done: 12 files", kBackupHelp, "Tools", kSettingAction),
         S("Keys", "Found", "prod.keys and title.keys, dumped from your own Switch, go in /data/switch-emu/keys. Dump them after updating the Switch to the firmware you use here. Cross checks again.", "Setup", kSettingText),
         S("Firmware", "Installed (234 files)", "The Switch firmware dumped from your own console: copy its .nca files, loose, into the folder nand/system/Contents/registered inside /data/switch-emu. Cross checks again.", "Setup", kSettingText),
+        S("Version", "v00.66", "PS4 Switch Emu, an unofficial port of the Eden emulator. Please include this version and the PS4 firmware below in bug reports.", "About", kSettingText),
+        S("PS4 firmware", "13.02", "The console's system software version, as the console reports it.", "About", kSettingText),
     };
     std::vector<Ps4LauncherSetting> game = {
         S("Graphics", "Vulkan", kGraphicsHelp, "Display", kSettingChoice),
