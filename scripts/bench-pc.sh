@@ -9,7 +9,7 @@ NRO=/work/tools/test-nro/test.nro
 export HOME=/build/pc-bench-home XDG_DATA_HOME=/build/pc-bench-home/data XDG_CONFIG_HOME=/build/pc-bench-home/config
 export EDEN_NULL_RENDERER=1
 CFG="$XDG_CONFIG_HOME/eden/sdl2-config.ini"
-RESULT="$XDG_DATA_HOME/eden/sdmc/eden-ps4-test.txt"
+RESULT="$XDG_DATA_HOME/eden/sdmc/cpu-benchmark.txt"
 mkdir -p "$HOME" "$XDG_CONFIG_HOME/eden"
 
 # First run writes the default config; then pin the core mode (single = like the PS4 build).

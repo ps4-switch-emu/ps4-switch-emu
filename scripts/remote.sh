@@ -11,6 +11,6 @@ DEST="${EDENPS4_DEST:-eden-ps4}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 rsync -a -e "$RSYNC_SSH" --delete --exclude /out/ --exclude /eden/.cache/ --exclude '/tools/test-nro/test.*' --exclude /tools/test-nro/build/ --exclude '/tools/gfx-test/gfx-test.*' --exclude /tools/gfx-test/build/ --exclude .DS_Store --exclude /build-host.env "$ROOT/" "$HOST:$DEST/"
-ssh ${SSH_OPTS[@]+"${SSH_OPTS[@]}"} "$HOST" "cd ~/$DEST && EDENPS4_LOCAL=1 JOBS=${JOBS:-12} docker/run.sh $(printf '%q ' "$@")"
+ssh ${SSH_OPTS[@]+"${SSH_OPTS[@]}"} "$HOST" "cd ~/$DEST && EDENPS4_LOCAL=1 JOBS=${JOBS:-12} EDENPS4_RUN_ARGS=$(printf '%q' "${EDENPS4_RUN_ARGS:-}") docker/run.sh $(printf '%q ' "$@")"
 mkdir -p "$ROOT/out"
 rsync -a -e "$RSYNC_SSH" "$HOST:$DEST/out/" "$ROOT/out/" 2>/dev/null || true

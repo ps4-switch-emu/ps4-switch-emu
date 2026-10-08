@@ -32,7 +32,9 @@ fi
 
 tty=()
 [ -t 0 ] && tty=(-it)
-exec "$engine" run --rm ${tty[@]+"${tty[@]}"} --platform linux/amd64 \
+# EDENPS4_RUN_ARGS: extra container options (scripts/profile-pc.sh needs perf_event_open).
+read -r -a extra <<< "${EDENPS4_RUN_ARGS:-}"
+exec "$engine" run --rm ${tty[@]+"${tty[@]}"} ${extra[@]+"${extra[@]}"} --platform linux/amd64 \
     -v "$ROOT:/work$label" -v edenps4-build:/build \
     -e JOBS="${JOBS:-8}" \
     "$IMAGE" "${@:-bash}"
