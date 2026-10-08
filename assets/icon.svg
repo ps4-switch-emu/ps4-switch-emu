@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- PS4 Switch Emu logo. GPL-3.0-or-later, like the rest of the project. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1A2542"/>
+      <stop offset="1" stop-color="#0D1324"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-300%" width="140%" height="700%">
+      <feGaussianBlur stdDeviation="7"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <!-- console: two slanted slabs with a light strip between them -->
+  <g transform="translate(0,-9)">
+  <polygon points="134,322 402,322 390,350 122,350" fill="#34446B"/>
+  <line x1="124" y1="361" x2="392" y2="361" stroke="#4FA8FF" stroke-width="14" stroke-linecap="round" filter="url(#glow)" opacity="0.8"/>
+  <line x1="124" y1="361" x2="392" y2="361" stroke="#7CC0FF" stroke-width="7" stroke-linecap="round"/>
+  <polygon points="120,372 388,372 376,402 108,402" fill="#34446B"/>
+  </g>
+  <!-- handheld: detachable grips either side of the screen -->
+  <g transform="translate(0,9)">
+  <rect x="94" y="122" width="82" height="152" rx="41" fill="#3EA6FF"/>
+  <rect x="336" y="122" width="82" height="152" rx="41" fill="#FF5A6E"/>
+  <circle cx="128" cy="162" r="15" fill="#0D1324"/>
+  <circle cx="384" cy="236" r="15" fill="#0D1324"/>
+  <rect x="150" y="110" width="212" height="176" rx="20" fill="#0B1020" stroke="#E8EEF8" stroke-width="9"/>
+  <polygon points="238,170 238,226 284,198" fill="#E8EEF8" stroke="#E8EEF8" stroke-width="10" stroke-linejoin="round"/>
+  </g>
+</svg>

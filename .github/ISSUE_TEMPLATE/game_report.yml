@@ -1,0 +1,40 @@
+name: Game report
+description: How well a game runs, for the compatibility list
+labels: [compatibility]
+body:
+  - type: input
+    id: game
+    attributes:
+      label: Game
+      description: Its name, title ID and version (base game or with update).
+    validations:
+      required: true
+  - type: dropdown
+    id: status
+    attributes:
+      label: How it runs
+      options:
+        - Playable (can be finished)
+        - In game (playable parts, with problems)
+        - Menus only
+        - Crashes or black screen at start
+    validations:
+      required: true
+  - type: input
+    id: fps
+    attributes:
+      label: Frame rate
+      description: From the performance overlay (Settings > Debug).
+      placeholder: 30-45 fps in levels
+  - type: input
+    id: setup
+    attributes:
+      label: App version, console and settings
+      placeholder: v0.1.0, PS4 Pro, Handheld + Spread game threads On
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Graphics glitches, sound problems, where it slows down.

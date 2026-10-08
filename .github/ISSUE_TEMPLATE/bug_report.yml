@@ -1,0 +1,66 @@
+name: Bug report
+description: A crash, a game that doesn't work, or something else wrong
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing! Please check the [README](https://github.com/ps4-switch-emu/ps4-switch-emu#readme) first, and don't ask
+        for keys, firmware or games: issues asking for them are closed.
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: The version of the package you installed (the PS4 shows it under the app's Information).
+      placeholder: v0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: console
+    attributes:
+      label: Console
+      options: [PS4 Pro, PS4 Slim, PS4 (original), Other]
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: PS4 firmware and GoldHEN version
+      placeholder: 11.00, GoldHEN 2.4
+    validations:
+      required: true
+  - type: input
+    id: game
+    attributes:
+      label: Game or homebrew
+      description: Its name and title ID, and whether it's an .nsp, .xci or .nro.
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead. Photos of the screen help.
+    validations:
+      required: true
+  - type: textarea
+    id: settings
+    attributes:
+      label: Settings changed from the defaults
+      placeholder: Console mode Handheld, Spread game threads On
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        Attach the files from `/data/switch-emu/logs/` on the PS4 (drag them in here):
+        `boot-trace.log`, `emulator.log`, and `crash.log` if there is one.
+    validations:
+      required: true
+  - type: checkboxes
+    id: own
+    attributes:
+      label: Confirmation
+      options:
+        - label: My keys, firmware and games are dumped from my own Switch.
+          required: true

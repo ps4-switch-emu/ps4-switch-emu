@@ -1,0 +1,11 @@
+.DS_Store
+/out/
+tools/gpu-test/romfs/shaders/
+tools/gpu-test/build/
+tools/gpu-test/gpu-test.*
+tools/pad-test/build/
+tools/pad-test/pad-test.*
+tools/audio-test/build/
+tools/audio-test/audio-test.*
+tools/ui-preview/out/
+/build-host.env

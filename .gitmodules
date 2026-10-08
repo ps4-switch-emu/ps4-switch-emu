@@ -1,0 +1,7 @@
+[submodule "eden"]
+	path = eden
+	url = https://github.com/ps4-switch-emu/ps4-switch-emu-core.git
+	branch = main
+[submodule "vendor/DolphinPS4"]
+	path = vendor/DolphinPS4
+	url = https://github.com/iHaiDeeZ/DolphinPS4.git
