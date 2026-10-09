@@ -12,7 +12,9 @@
 set -euo pipefail
 DPS4=/work/vendor/DolphinPS4
 BUILD=/build/build/eden
-ELF="$BUILD/bin/eden-cli"
+# ELF=/build/oelf/eden-cli-vXX.YY.elf repackages an earlier build (every packaged version is kept
+# there); PKG_OUT=/work/out/<folder> puts the package somewhere other than out/.
+ELF="${ELF:-$BUILD/bin/eden-cli}"
 VERSION="${1:-00.01}" # what Settings > About shows (without the v)
 if [[ "$VERSION" =~ ^([0-9]+)\.([0-9])\.([0-9])$ ]]; then
     APP_VER="$(printf '%02d.%d%d' $((BASH_REMATCH[1] + 1)) "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}")"
@@ -47,7 +49,8 @@ rsvg-convert -w 512 -h 512 -o "$STAGE/sce_sys/icon0.png" /work/assets/icon.svg
 # clocks (CPU 1.6 instead of 2.13 GHz) unless Boost Mode is on in the system settings. Untested:
 # DolphinPS4's Vulkan build kept the plain identity (memory budget), and Pro mode changes the GPU.
 MAKE_PKG="$DPS4/scripts/make-pkg.sh"
-PKG_OUT=/work/out
+PKG_OUT="${PKG_OUT:-/work/out}"
+mkdir -p "$PKG_OUT"
 if [ "${PRO:-0}" = 1 ]; then
     sed 's/^\(    set_entry ATTRIBUTE Integer 4\) 0$/\1 0x00800000/' "$DPS4/scripts/make-pkg.sh" > "$WORK/make-pkg-pro.sh"
     grep -q 'ATTRIBUTE Integer 4 0x00800000' "$WORK/make-pkg-pro.sh" || { echo "PRO: could not set ATTRIBUTE" >&2; exit 1; }
@@ -62,5 +65,5 @@ if [ "${PRO:-0}" = 1 ]; then
     mv "$PKG" "/work/out/experimental/$(basename "$PKG" .pkg)-PRO.pkg"
     PKG="/work/out/experimental/$(basename "$PKG" .pkg)-PRO.pkg"
 fi
-mkdir -p /build/oelf && cp "$WORK/eden-cli.oelf" "/build/oelf/eden-cli-v$VERSION.oelf" && cp "$ELF" "/build/oelf/eden-cli-v$VERSION.elf" # symbolizing samples.log
+mkdir -p /build/oelf && cp "$WORK/eden-cli.oelf" "/build/oelf/eden-cli-v$VERSION.oelf" && { [ "$ELF" -ef "/build/oelf/eden-cli-v$VERSION.elf" ] || cp "$ELF" "/build/oelf/eden-cli-v$VERSION.elf"; } # symbolizing samples.log
 ls -la "$PKG"

@@ -31,6 +31,8 @@ export EDEN_FORCE_PT_SIGN_EXTENSION=1
 export EDEN_HOST_FEATURES="${EDEN_HOST_FEATURES-jaguar}"
 export SDL_AUDIO_DRIVER=dummy
 if [ "$GFX" = gfx ]; then
+    # EDEN_PS4_GPU_LIMITS=1 (set it to test): skip the draws the PS4 build skips (geometry shaders,
+    # tessellation), to see what a game looks like there.
     export SDL_VIDEO_DRIVER=offscreen EDEN_SCREENSHOTS=/build/pc-shots
     rm -rf /build/pc-shots && mkdir -p /build/pc-shots
 else
