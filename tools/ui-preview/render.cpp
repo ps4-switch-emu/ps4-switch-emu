@@ -335,7 +335,37 @@ int main(int argc, char** argv) {
                              "fastmem: reserved 16 GiB arena at 0x201200000", "main: system initialized",
                              "main: loading game", "main: load result 0", "main: running emulation"})
         ps4_status_push(line);
-    ps4_status_set_stage("Benchmark suite 2/5: multi-core, fastmem");
-    DrawFrame(1);
-    Shot("10-status-screen");
+    g_loading_title[0] = 0; // not starting a game: the activity screen
+    {
+        const std::string results = g_out + "/bench-results.txt";
+        if (FILE* f = fopen(results.c_str(), "w")) {
+            fputs("Benchmark suite (real seconds, lower is faster)\n"
+                  "single-core, no fastmem: integer 10.1 s, float 25.3 s, memory 12.8 s\n", f);
+            fclose(f);
+        }
+        ps4_status_watch_file(results.c_str(), "Benchmark results");
+        ps4_status_set_stage("Benchmark suite 2/5: multi-core, fastmem");
+        DrawFrame(1);
+        Shot("10-status-screen");
+        if (FILE* f = fopen(results.c_str(), "a")) {
+            fputs("multi-core, no fastmem: integer 6.0 s, float 18.9 s, memory 12.5 s\n"
+                  "single-core, fastmem: integer 9.7 s, float 23.5 s, memory 6.5 s\n"
+                  "multi-core, fastmem: integer 6.0 s, float 19.1 s, memory 6.3 s\n"
+                  "multi-core, fastmem, Unsafe: integer 6.0 s, float 16.7 s, memory 6.4 s\n", f);
+            fclose(f);
+        }
+        ps4_status_set_stage("Benchmark suite finished - results on the right. Press any button for the launcher.");
+        DrawFrame(2);
+        Shot("10b-benchmarks-finished");
+        ps4_status_watch_file("", "");
+        g_watch_count = 0;
+        ps4_status_push("install: Sample Adventure [0100000000ABC800][v65536][Update].nsp: 397 MB");
+        ps4_status_set_stage("Installing Sample Adventure [0100000000ABC800][v65536][Update].nsp (1/2): 64%");
+        DrawFrame(3);
+        Shot("10c-installing");
+        g_crashed = true;
+        DrawFrame(4);
+        Shot("10d-crashed");
+        g_crashed = false;
+    }
 }
