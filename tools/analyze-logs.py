@@ -80,7 +80,31 @@ def main():
         for t, ms, faults, pipes in sorted(gaps, key=lambda g: -g[1])[:8]:
             print(f"  {t:8.1f} s  {ms:5d} ms  ({faults} fastmem faults, {pipes} new pipelines)")
 
+    builds = []
+    for line in lines:
+        t, text = message(line)
+        m = re.search(r"shader: new pipeline #(\d+) built in (\d+) ms", text)
+        if m:
+            builds.append((t, int(m.group(2))))
+    if builds:
+        print(f"\n== slow shader builds (>= 30 ms): {len(builds)}, {sum(b[1] for b in builds) / 1000:.1f} s in total, "
+              f"worst {max(b[1] for b in builds)} ms")
+        for t, ms in sorted(builds, key=lambda b: -b[1])[:5]:
+            print(f"  {t:8.1f} s  {ms:5d} ms")
+
+    emulator = read(os.path.join(folder, "emulator.log"))
+    skipped = [l for l in emulator if "PS4: skipping draws" in l]
+    if skipped:
+        print(f"\n== GPU: pipelines skipped (geometry/tessellation shaders the PS4 can't run): "
+              f"{re.search(r'(\d+) pipelines skipped', skipped[-1]).group(1) if re.search(r'(\d+) pipelines skipped', skipped[-1]) else len(skipped)}")
+    oom = [l for l in emulator if re.search(r"OUT_OF_(DEVICE|HOST)_MEMORY|Out of memory|failed to allocate", l, re.I)]
+    if oom:
+        print("\n== out of memory messages (emulator.log)")
+        for l in oom[:5]:
+            print("  " + l.strip()[:200])
+
     for title, key in (("thread priorities", ": priority "), ("pinned threads", "pinned to core"),
+                       ("lazy DRAM mapping", "lazy mapping"), ("shader builders", "pipeline builder threads"),
                        ("fastmem coverage", "fastmem ("), ("JIT code cache clears", "jit: core")):
         found = [message(l)[1] for l in lines if key in l]
         if found:
