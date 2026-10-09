@@ -220,6 +220,7 @@ int main(int argc, char** argv) {
     DrawSplash(2.6, true);
     Shot("00e-splash-holding");
     ps4_status_set_stage("Starting");
+    Settle(); // the launcher again (the splash shots drew straight into the frame)
     Shot("01-games");
     ps4_launcher_set_state(0, 21, 0);
     Settle();
