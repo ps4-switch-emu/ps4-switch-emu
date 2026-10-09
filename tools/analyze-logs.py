@@ -62,6 +62,15 @@ def main():
               f"min {min(fps):.1f}, max {max(fps):.1f}; GPU wait median {statistics.median(p[2] for p in perf):.0f}%; "
               f"fastmem faults {sum(p[3] for p in perf)}")
         print(f"  memory: GPU up to {max(p[4] for p in perf)} MiB, direct memory free as low as {min(p[5] for p in perf)} MiB")
+        ups = [re.search(r"uploads (?:[0-9.]+ MiB uniforms, )?([0-9.]+) MiB buffers \(([0-9.]+) in place\), ([0-9.]+) MiB textures on the CPU "
+                         r"\(([0-9.]+) converted\), ([0-9.]+) on the GPU", message(l)[1]) for l in lines if "uploads " in l]
+        ups = [tuple(float(x) for x in u.groups()) for u in ups if u]
+        if ups:
+            total = [sum(u[i] for u in ups) for i in range(5)]
+            print(f"  GPU uploads per 5 s (median): buffers {statistics.median(u[0] for u in ups):.1f} MiB "
+                  f"({100 * total[1] / total[0] if total[0] else 0:.0f}% written in place), textures unswizzled on the CPU "
+                  f"{statistics.median(u[2] for u in ups):.1f} MiB ({total[3]:.0f} MiB converted in all), "
+                  f"on the GPU {statistics.median(u[4] for u in ups):.1f} MiB")
         buckets = {}
         for p in perf:
             buckets.setdefault(int(p[1] // 5) * 5, 0)
@@ -105,7 +114,8 @@ def main():
 
     for title, key in (("thread priorities", ": priority "), ("pinned threads", "pinned to core"),
                        ("lazy DRAM mapping", "lazy mapping"), ("shader builders", "pipeline builder threads"),
-                       ("fastmem coverage", "fastmem ("), ("JIT code cache clears", "jit: core")):
+                       ("fastmem coverage", "fastmem ("), ("JIT code cache clears", "jit: core"),
+                       ("GPU stalls (possible GPU hang)", "GPU: no progress")):
         found = [message(l)[1] for l in lines if key in l]
         if found:
             print(f"\n== {title}")

@@ -117,6 +117,8 @@ int main(int argc, char** argv) {
         S("Console mode", "Docked", "Handheld makes games render at 720p instead of 1080p: much less GPU work, often a big speed-up on the PS4. Docked looks sharper.", "Display", kSettingChoice),
         S("Resolution", "1x (native)", "x", "Display", kSettingChoice),
         S("GPU accuracy", "Low", "x", "Display", kSettingChoice),
+        S("Games layout", "List", "x", "Launcher", kSettingChoice),
+        S("Sort games", "Most played", "x", "Launcher", kSettingChoice),
         S("Button layout", "Switch positions", "x", "Controls", kSettingChoice),
         S("Spread game threads", "Off", kSpreadHelp, "Performance", kSettingToggle),
         S("Multi-core", "On", "x", "Performance", kSettingToggle),
