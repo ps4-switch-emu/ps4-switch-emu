@@ -20,9 +20,15 @@ if [ -n "${4:-}" ]; then
     export EDEN_AUTOPRESS="$4"
 fi
 GFX="${5:-}"
+# JITDUMP=1: save the compiled blocks too and show the hottest ones disassembled (tools/jit-hot-blocks.py).
+if [ "${JITDUMP:-}" = 1 ]; then
+    export PERF_BUILDID_DIR=/tmp EDEN_JIT_DUMP=/build/pc-jit.dump
+fi
 EDEN=/build/build/eden-linux/bin/eden-cli
 export HOME=/build/pc-bench-home XDG_DATA_HOME=/build/pc-bench-home/data XDG_CONFIG_HOME=/build/pc-bench-home/config
 export EDEN_FORCE_PT_SIGN_EXTENSION=1
+# The JIT emits code for the PS4's Jaguar cores (no AVX2/FMA/BMI2) unless EDEN_HOST_FEATURES= is set empty.
+export EDEN_HOST_FEATURES="${EDEN_HOST_FEATURES-jaguar}"
 export SDL_AUDIO_DRIVER=dummy
 if [ "$GFX" = gfx ]; then
     export SDL_VIDEO_DRIVER=offscreen EDEN_SCREENSHOTS=/build/pc-shots
@@ -46,7 +52,7 @@ mkdir -p "$XDG_CONFIG_HOME/eden"
 [ -f "$CFG" ] || { timeout -s KILL 20 "$EDEN" >/dev/null 2>&1 || true; }
 set_cfg() { sed -i -E "s/^$1\\\\default=.*/$1\\\\default=false/; s/^$1=.*/$1=$2/" "$CFG"; }
 set_cfg use_multi_core true
-set_cfg cpu_accuracy 0
+set_cfg cpu_accuracy "${CPU_ACCURACY:-0}" # 0 Auto (the default), 1 Accurate, 2 Unsafe
 set_cfg cpuopt_unsafe_host_mmu true
 set_cfg log_filter '"*:Warning"'
 if [ "$GFX" = gfx ]; then
@@ -88,3 +94,8 @@ echo "== threads (share of samples)"
 echo "== where each busy thread spends its time (JIT code shows as [unknown] / anon)"
 "$PERF" report -i /build/pc-profile.data --stdio --sort comm,dso,sym --percent-limit 0.4 2>/dev/null \
     | grep -E '^ +[0-9]' | head -60
+if [ "${JITDUMP:-}" = 1 ]; then
+    echo "== hottest JIT blocks"
+    "$PERF" script -i /build/pc-profile.data -F comm,ip 2>/dev/null \
+        | python3 "$(dirname "$0")/../tools/jit-hot-blocks.py" /build/pc-jit.dump "${JITBLOCKS:-6}"
+fi

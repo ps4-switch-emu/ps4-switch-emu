@@ -1,0 +1,10 @@
+# Button script for EDEN_AUTOPRESS (scripts/profile-pc.sh): plays a game without a controller so a
+# profile can cover gameplay rather than the title screen. Times are seconds since the game started.
+#   every <period s> <button> <press ms> from <s> until <s>   - tap a button repeatedly
+#   hold <button> from <s> until <s>                          - hold a button (or a d-pad direction)
+# Buttons: A B X Y L R ZL ZR PLUS MINUS UP DOWN LEFT RIGHT.
+# Menus: A through the title screen and menus.
+every 1.5 A 120 from 12 until 50
+# Gameplay: move right, jumping now and then.
+hold RIGHT from 50 until 600
+every 0.9 A 300 from 50 until 600
