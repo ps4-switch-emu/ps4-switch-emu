@@ -18,6 +18,9 @@ int32_t sceKernelReleaseDirectMemory(off_t, size_t) { return 0; }
 size_t sceKernelGetDirectMemorySize() { return 0; }
 void ps4_boot_trace(const char*) {}
 }
+#include <atomic>
+std::atomic<unsigned long long> ps4_pipelines_built{0}; // stub.cpp on the PS4
+
 #include "status_screen.cpp"
 #include <vector>
 #include <thread>
@@ -271,9 +274,25 @@ int main(int argc, char** argv) {
     g_launch_t0 = -1;
     ps4_launcher_set_loading("Sample Platformer", smb.data());
     std::vector<uint32_t> fb(size_t(kWidth) * kHeight);
-    ps4_status_render_loading(fb.data(), kWidth, "Building shaders from the cache: 120 of 431");
-    memcpy(g_frame, fb.data(), kFrameBytes);
-    Shot("08-loading");
+    {
+        const auto shot = [&](const char* name) {
+            ps4_status_render_loading(fb.data(), kWidth, nullptr);
+            memcpy(g_frame, fb.data(), fb.size() * 4);
+            Shot(name);
+        };
+        shot("08-loading-graphics");
+        ps4_loading_cache(120, 431);
+        shot("08-loading");
+        ps4_loading_starting_game();
+        g_load.stage_time -= 14; // 14 s into the game's start
+        ps4_pipelines_built += 37;
+        shot("08b-loading-starting");
+        ps4_launcher_set_loading("Sample Platformer", smb.data());
+        ps4_loading_starting_game(); // a first start: nothing in the cache
+        g_load.stage_time -= 75;
+        ps4_pipelines_built += 212;
+        shot("08c-loading-first-start");
+    }
 
     // Home menu over a stand-in game frame.
     for (int y = 0; y < kHeight; y++)
