@@ -17,6 +17,9 @@ int32_t sceKernelMunmap(void*, size_t) { return 0; }
 int32_t sceKernelReleaseDirectMemory(off_t, size_t) { return 0; }
 size_t sceKernelGetDirectMemorySize() { return 0; }
 void ps4_boot_trace(const char*) {}
+void ps4_sound_open() {}
+void ps4_sound_play(int) {}
+void ps4_sound_close() {}
 }
 #include <atomic>
 std::atomic<unsigned long long> ps4_pipelines_built{0}; // stub.cpp on the PS4
@@ -92,7 +95,7 @@ int main(int argc, char** argv) {
     std::vector<Ps4LauncherGame> library;
     for (const char* n : names) {
         const bool homebrew = strstr(n, " Test") != nullptr || strcmp(n, "gpu-test") == 0;
-        details.push_back(strcmp(n, "Sample Platformer") == 0 ? "Game  -  NSP, 203 MB  -  last played Oct 08"
+        details.push_back(strcmp(n, "Sample Platformer") == 0 ? "Game  -  NSP, 203 MB  -  played 12 h 31 min  -  last played yesterday"
                           : homebrew                       ? "Homebrew  -  NRO, 0 MB"
                                                            : "Game  -  NSP, 3.4 GB");
     }
@@ -172,12 +175,22 @@ int main(int argc, char** argv) {
             printf("%-34s %6.2f ms per frame\n", name, ms / kFrames);
         };
         ps4_launcher_set_layout(kLayoutGrid, -1);
+        for (const bool holding : {false, true}) { // the splash alone (DrawFrame would add the launcher)
+            const auto t0 = std::chrono::steady_clock::now();
+            for (int i = 0; i < 120; i++)
+                DrawSplash((holding ? 2.0 : 0.2) + i * 0.016, holding);
+            const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+            printf("%-34s %6.2f ms per frame\n", holding ? "splash holding" : "splash animating", ms / 120);
+        }
         bench("grid, still", [](int) { ps4_launcher_set_state(0, 3, 0); });
         bench("grid, moving every frame", [](int i) { ps4_launcher_set_state(0, 3 + (i / 4) % 2, 0); });
         ps4_launcher_set_layout(kLayoutRow, -1);
         bench("row, still", [](int) { ps4_launcher_set_state(0, 3, 0); });
         bench("row, moving every frame", [](int i) { ps4_launcher_set_state(0, 3 + (i / 4) % 2, 0); });
         bench("row, shortcuts moving", [](int i) { ps4_launcher_set_layout(kLayoutRow, (i / 4) % 3); });
+        ps4_launcher_set_layout(kLayoutList, -1);
+        bench("list, still", [](int) { ps4_launcher_set_state(0, 3, 0); });
+        bench("list, moving every frame", [](int i) { ps4_launcher_set_state(0, 3 + (i / 4) % 2, 0); });
         ps4_launcher_set_layout(kLayoutGrid, -1);
         bench("settings, still", [](int) { ps4_launcher_set_state(1, 0, 5); });
         bench("settings, moving every frame", [](int i) { ps4_launcher_set_state(1, 0, 5 + (i / 4) % 2); });
@@ -196,6 +209,17 @@ int main(int argc, char** argv) {
 
     ps4_launcher_set_state(0, 0, 0);
     Settle();
+    // The splash screen at points of its animation, then holding while the library is read.
+    std::snprintf(g_version, sizeof(g_version), "v00.86");
+    for (const auto& [t, name] : std::vector<std::pair<double, const char*>>{
+             {0.25, "00a-splash-0.25s"}, {0.55, "00b-splash-0.55s"}, {0.9, "00c-splash-0.9s"}, {1.5, "00d-splash-1.5s"}}) {
+        DrawSplash(t, false);
+        Shot(name);
+    }
+    ps4_status_set_stage("Reading game info (3 of 12)");
+    DrawSplash(2.6, true);
+    Shot("00e-splash-holding");
+    ps4_status_set_stage("Starting");
     Shot("01-games");
     ps4_launcher_set_state(0, 21, 0);
     Settle();
@@ -216,6 +240,15 @@ int main(int argc, char** argv) {
         Settle();
     }
     Shot("02d-games-row-scrolled");
+    ps4_launcher_set_layout(kLayoutList, -1);
+    ps4_launcher_set_state(0, 0, 0);
+    Settle();
+    Shot("02e-games-list");
+    for (int i = 1; i <= 12; i++) { // walk down: the list scrolls
+        ps4_launcher_set_state(0, i, 0);
+        Settle();
+    }
+    Shot("02f-games-list-scrolled");
     ps4_launcher_set_layout(kLayoutGrid, -1);
     {
         const auto t0 = std::chrono::steady_clock::now();
@@ -306,7 +339,7 @@ int main(int argc, char** argv) {
             fb[size_t(y) * kWidth + x] = c;
         }
     static const char* const items[] = {"Resume", "Restart game", "Quit to launcher", "Performance overlay: Detailed"};
-    Ps4HomeMenu menu{"Sample Platformer", "Frame rate: 58 fps (last 5 s)", items, 4, 0};
+    Ps4HomeMenu menu{"Sample Platformer", "Frame rate: 58 fps (last 5 s)", items, 4, 0, 23 * 60 + 41, 12 * 3600 + 31 * 60};
     std::vector<uint32_t> out(size_t(kWidth) * kHeight);
     ps4_status_draw_home(out.data(), fb.data(), kWidth, &menu, true);
     for (int i = 0; i < 30 && ps4_status_home_animating(); i++) { // the panel rising in
@@ -342,6 +375,10 @@ int main(int argc, char** argv) {
         stamp(kOverlayFps, kOverlayTopRight, st);
         Shot("11-overlay-fps");
         st.fps = 34.2f, st.frame_ms = 29.2f, st.worst_ms = 183.0f, st.gpu_wait = 0.41f;
+        st.history_count = 120; // mostly 30 fps with jitter, a few 60 fps runs, two stutters
+        for (int i = 0; i < 120; i++)
+            st.history[i] = (i / 20) % 3 == 1 ? 16.7f : 33.3f + float((i * 7) % 5) - 2.0f;
+        st.history[47] = 95.0f, st.history[101] = 183.0f;
         memcpy(g_frame, fb.data(), kFrameBytes);
         stamp(kOverlayDetailed, kOverlayTopLeft, st);
         Shot("12-overlay-detailed");
