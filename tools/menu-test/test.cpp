@@ -57,7 +57,12 @@ int32_t scePadReadState(int32_t, void* data) {
         printf("FAIL: controller script ran out (menu still waiting)\n");
         exit(1);
     }
-    *static_cast<uint32_t*>(data) = g_script[g_step++];
+    // Script values with the top bit set are a left-stick position (x << 8 | y), no buttons.
+    const uint32_t v = g_script[g_step++];
+    auto* bytes = static_cast<uint8_t*>(data);
+    *static_cast<uint32_t*>(data) = (v & 0x80000000u) ? 0 : v;
+    bytes[4] = (v & 0x80000000u) ? uint8_t(v >> 8) : 128;
+    bytes[5] = (v & 0x80000000u) ? uint8_t(v) : 128;
     return 0;
 }
 int sceSystemServiceLoadExec(const char*, char* const*) { g_exec = true; return 0; }
@@ -273,6 +278,17 @@ int main() {
     }
     Check(backed_up_again, "Back up saves shortcut made a backup");
     Check(g_game == 1, "Right then Cross starts the second game");
+
+    printf("11. Left stick: moves like the D-pad (Right, back to centre, Right), then Cross\n");
+    {
+        constexpr uint32_t StickRight = 0x80000000u | (255u << 8) | 128u, StickCentre = 0x80000000u | (128u << 8) | 128u,
+                           StickLeftFull = 0x80000000u | (0u << 8) | 128u;
+        // Back on the grid layout; from the first game: stick right, centre, right -> third game.
+        SaveLayout(kLayoutGrid);
+        Script({StickRight, StickCentre, StickRight, StickCentre, StickLeftFull, StickCentre, X});
+        ps4_menu_run();
+        Check(g_game == 1, "stick: right, right, left (fully) -> second game");
+    }
 
     printf("\n%s (%s)\n", g_failures ? "FAILED" : "all passed", g_root.c_str());
     return g_failures ? 1 : 0;
