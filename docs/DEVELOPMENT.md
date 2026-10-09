@@ -11,7 +11,11 @@ addresses can be turned into function names in the container:
 docker/run.sh llvm-symbolizer-21 --demangle --obj=/build/oelf/eden-cli-v01.00.elf 0x1234560 0x1234abc
 ```
 
-Use the version of the package that crashed. `/data/switch-emu/logs/boot-trace.log` shows how far startup
+Use the version of the package that crashed. `crash.log` also names the crashing thread. When the app is started
+again after a crash, the crashed run's trace is kept as `/data/switch-emu/logs/boot-trace.prev.log`.
+
+The PS4 build logs only warnings and errors to `logs/emulator.log`. To log everything while
+chasing a bug, create an empty file `/data/switch-emu/verbose-log` (it slows the emulator down). `/data/switch-emu/logs/boot-trace.log` shows how far startup
 got: one line per stage, the memory setup, and which executable-memory method the jailbreak
 allowed.
 
