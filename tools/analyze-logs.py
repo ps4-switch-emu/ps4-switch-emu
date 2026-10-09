@@ -51,14 +51,17 @@ def main():
     for line in lines:
         t, text = message(line)
         m = re.search(r"perf: game ([0-9.]+) fps.*?([0-9.]+|-nan) ms per frame, waiting for the GPU ([0-9.]+)%"
-                      r"(?: of the time, (\d+) fastmem faults)?", text)
+                      r"(?: of the time, (\d+) fastmem faults)?(?:, GPU memory (\d+) MiB)?", text)
         if m and float(m.group(1)) > 1:
-            perf.append((t, float(m.group(1)), float(m.group(3)), int(m.group(4) or 0)))
+            dmem = re.search(r"dmem (\d+) MiB", line)
+            perf.append((t, float(m.group(1)), float(m.group(3)), int(m.group(4) or 0), int(m.group(5) or 0),
+                         int(dmem.group(1)) if dmem else 0))
     if perf:
         fps = [p[1] for p in perf]
         print(f"\n== frame rate over {len(perf)} 5 s windows: median {statistics.median(fps):.1f}, "
               f"min {min(fps):.1f}, max {max(fps):.1f}; GPU wait median {statistics.median(p[2] for p in perf):.0f}%; "
               f"fastmem faults {sum(p[3] for p in perf)}")
+        print(f"  memory: GPU up to {max(p[4] for p in perf)} MiB, direct memory free as low as {min(p[5] for p in perf)} MiB")
         buckets = {}
         for p in perf:
             buckets.setdefault(int(p[1] // 5) * 5, 0)
