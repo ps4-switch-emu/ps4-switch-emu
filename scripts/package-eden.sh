@@ -42,6 +42,25 @@ echo "$VERSION" > "$STAGE/version.txt" # shown in Settings > About (read from /a
 # Icon: the project's logo (assets/icon.svg: square, the PS4 rounds the corners itself), 512x512 PNG.
 rsvg-convert -w 512 -h 512 -o "$STAGE/sce_sys/icon0.png" /work/assets/icon.svg
 
-PKG="$(SFO_STYLE=plain NO_RIGHT_SPRX=1 "$DPS4/scripts/make-pkg.sh" "$STAGE" "$TITLE_ID" "PS4 Switch Emu" "$APP_VER" SWITCHEMU /work/out | tail -1)"
+# PRO=1: an experimental package that declares PS4 Pro support (param.sfo ATTRIBUTE 0x00800000,
+# "supports PS4 Pro"), into out/experimental. Without it a PS4 Pro runs the app at the base PS4's
+# clocks (CPU 1.6 instead of 2.13 GHz) unless Boost Mode is on in the system settings. Untested:
+# DolphinPS4's Vulkan build kept the plain identity (memory budget), and Pro mode changes the GPU.
+MAKE_PKG="$DPS4/scripts/make-pkg.sh"
+PKG_OUT=/work/out
+if [ "${PRO:-0}" = 1 ]; then
+    sed 's/^\(    set_entry ATTRIBUTE Integer 4\) 0$/\1 0x00800000/' "$DPS4/scripts/make-pkg.sh" > "$WORK/make-pkg-pro.sh"
+    grep -q 'ATTRIBUTE Integer 4 0x00800000' "$WORK/make-pkg-pro.sh" || { echo "PRO: could not set ATTRIBUTE" >&2; exit 1; }
+    chmod +x "$WORK/make-pkg-pro.sh"
+    export DOLPHIN_PS4_MODULES_DIR="${DOLPHIN_PS4_MODULES_DIR:-$DPS4/modules}"
+    MAKE_PKG="$WORK/make-pkg-pro.sh"
+    PKG_OUT="$WORK/pro-out"
+    mkdir -p "$PKG_OUT" /work/out/experimental
+fi
+PKG="$(SFO_STYLE=plain NO_RIGHT_SPRX=1 "$MAKE_PKG" "$STAGE" "$TITLE_ID" "PS4 Switch Emu" "$APP_VER" SWITCHEMU "$PKG_OUT" | tail -1)"
+if [ "${PRO:-0}" = 1 ]; then
+    mv "$PKG" "/work/out/experimental/$(basename "$PKG" .pkg)-PRO.pkg"
+    PKG="/work/out/experimental/$(basename "$PKG" .pkg)-PRO.pkg"
+fi
 mkdir -p /build/oelf && cp "$WORK/eden-cli.oelf" "/build/oelf/eden-cli-v$VERSION.oelf" && cp "$ELF" "/build/oelf/eden-cli-v$VERSION.elf" # symbolizing samples.log
 ls -la "$PKG"

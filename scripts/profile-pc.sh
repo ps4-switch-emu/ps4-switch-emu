@@ -23,6 +23,7 @@ GFX="${5:-}"
 EDEN=/build/build/eden-linux/bin/eden-cli
 export HOME=/build/pc-bench-home XDG_DATA_HOME=/build/pc-bench-home/data XDG_CONFIG_HOME=/build/pc-bench-home/config
 export EDEN_FORCE_PT_SIGN_EXTENSION=1
+export SDL_AUDIO_DRIVER=dummy
 if [ "$GFX" = gfx ]; then
     export SDL_VIDEO_DRIVER=offscreen EDEN_SCREENSHOTS=/build/pc-shots
     rm -rf /build/pc-shots && mkdir -p /build/pc-shots
@@ -54,7 +55,7 @@ if [ "$GFX" = gfx ]; then
 else
     set_cfg backend 2       # no graphics
 fi
-set_cfg output_engine null # no audio device in the container; the null sink still runs the audio
+set_cfg output_engine 2 # SDL with its dummy driver (no audio device in the container): consumes audio in real time like a real device
 
 # perf starts eden-cli itself (attaching to a running process needs privileges the build box's
 # kernel settings don't give), skips the boot, and stops it after the profiled stretch.
@@ -62,7 +63,7 @@ echo "booting for ${BOOT} s, then profiling ${SECONDS_PROFILED} s"
 "$PERF" record -q -F 999 -e cpu-clock:u -D $((BOOT * 1000)) -o /build/pc-profile.data -- \
     timeout -s KILL $((BOOT + SECONDS_PROFILED)) "$EDEN" "$GAME" > /build/pc-profile.log 2>&1 || true
 
-echo "== timeline: CPU use per thread, 5 s steps (100 = one core busy)"
+echo "== timeline: CPU use per emulator thread, 5 s steps (100 = one core busy; llvmpipe left out)"
 "$PERF" script -i /build/pc-profile.data -F comm,time 2>/dev/null | python3 -c '
 import sys, collections
 counts = collections.defaultdict(collections.Counter)
@@ -72,7 +73,9 @@ for line in sys.stdin:
     if len(parts) < 2: continue
     t = float(parts[-1].rstrip(":"))
     first = t if first is None else first
-    counts[int((t - first) // 5)][" ".join(parts[:-1])] += 1
+    name = " ".join(parts[:-1])
+    if name.startswith("llvmpipe"): continue  # the software renderer, not the emulator
+    counts[int((t - first) // 5)][name] += 1
 threads = collections.Counter()
 for c in counts.values(): threads.update(c)
 top = [t for t, _ in threads.most_common(6)]
