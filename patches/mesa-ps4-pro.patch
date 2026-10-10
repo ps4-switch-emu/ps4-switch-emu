@@ -1,0 +1,55 @@
+diff -ru a/src/amd/common/ac_cmdbuf.c b/src/amd/common/ac_cmdbuf.c
+--- a/src/amd/common/ac_cmdbuf.c	2026-10-09 23:24:56
++++ b/src/amd/common/ac_cmdbuf.c	2026-10-09 23:25:06
+@@ -217,6 +217,9 @@
+    }
+ }
+ 
++/* The PS4 Pro experiment's level (port/mesa/ac_ps4_drm.c); absent off the PS4. */
++extern int ac_ps4_pro_level __attribute__((weak));
++
+ static void
+ ac_set_raster_config(const struct radeon_info *info, struct ac_pm4_state *pm4)
+ {
+@@ -302,6 +305,14 @@
+ 
+    if (info->gfx_level <= GFX8) {
+       ac_set_raster_config(info, pm4);
++
++      /* PS4 Pro enhanced mode, level 2: the screen split between the four SEs, as Sony's driver
++       * sets it in that mode (context registers 0xeb/0xec, PA_SC_LEFT_VERT_GRID/PA_SC_HORIZ_GRID
++       * on later GPUs). */
++      if (&ac_ps4_pro_level && ac_ps4_pro_level >= 2 && info->family == CHIP_BONAIRE && info->max_se == 4) {
++         ac_pm4_set_reg(pm4, 0x0283AC, 0xff00ff00);
++         ac_pm4_set_reg(pm4, 0x0283B0, 0x0000ff00);
++      }
+ 
+       /* FIXME calculate these values somehow ??? */
+       ac_pm4_set_reg(pm4, R_028A54_VGT_GS_PER_ES, SI_GS_PER_ES);
+diff -ru a/src/amd/common/ac_gpu_info.c b/src/amd/common/ac_gpu_info.c
+--- a/src/amd/common/ac_gpu_info.c	2026-10-09 23:24:56
++++ b/src/amd/common/ac_gpu_info.c	2026-10-09 23:25:06
+@@ -2107,6 +2107,9 @@
+    }
+ }
+ 
++/* The PS4 Pro experiment's level (port/mesa/ac_ps4_drm.c); absent off the PS4. */
++extern int ac_ps4_pro_level __attribute__((weak));
++
+ void ac_get_raster_config(const struct radeon_info *info, uint32_t *raster_config_p,
+                           uint32_t *raster_config_1_p, uint32_t *se_tile_repeat_p)
+ {
+@@ -2180,6 +2183,13 @@
+     * RB performance by 25%. (it disables 1 RB in the second packer)
+     */
+    if (info->family == CHIP_FIJI && info->cik_macrotile_mode_array[0] == 0x000000e8) {
++      raster_config = 0x16000012;
++      raster_config_1 = 0x0000002a;
++   }
++
++   /* PS4 Pro in its enhanced mode (port/mesa/ac_ps4_drm.c, /data/switch-emu/gpu-pro.txt level 2):
++    * the PS4's GPU mirrored - 4 SEs / 8 RBs like Polaris 10 - so pixels go to all four. */
++   if (&ac_ps4_pro_level && ac_ps4_pro_level >= 2 && info->family == CHIP_BONAIRE && info->max_se == 4) {
+       raster_config = 0x16000012;
+       raster_config_1 = 0x0000002a;
+    }

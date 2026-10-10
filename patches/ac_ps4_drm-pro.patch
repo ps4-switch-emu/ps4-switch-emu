@@ -1,0 +1,98 @@
+diff -ru da/port/mesa/ac_ps4_drm.c db/port/mesa/ac_ps4_drm.c
+--- a/port/mesa/ac_ps4_drm.c	2026-10-09 23:25:30
++++ b/port/mesa/ac_ps4_drm.c	2026-10-09 23:31:50
+@@ -32,6 +32,30 @@
+ #include <unistd.h>
+ 
+ /* libkernel (declared here rather than through the OpenOrbis headers, which clash with Mesa's). */
++int32_t sceKernelIsNeoMode(void);
++
++/* PS4 Pro experiment (Switch Emu): in the Pro's enhanced mode (the app's param.sfo declares Pro
++ * support) the GPU is the PS4's mirrored - 4 shader engines, 36 CUs, 911 MHz. The level comes from
++ * /data/switch-emu/gpu-pro.txt and is used only in that mode: 0 report the base PS4 (default),
++ * 1 report the Pro's SEs/CUs (compute and vertex work on all 36 CUs), 2 also the Pro's raster setup
++ * (ac_gpu_info.c/ac_cmdbuf.c: pixels on all four SEs). A level that hangs the GPU: lower it. */
++int ac_ps4_pro_level = 0;
++static int ps4_neo_mode = 0;
++
++static void
++ps4_read_pro_level(void)
++{
++   int level = 0;
++   FILE *f = fopen("/data/switch-emu/gpu-pro.txt", "r");
++   if (f) {
++      if (fscanf(f, "%d", &level) != 1)
++         level = 0;
++      fclose(f);
++   }
++   ps4_neo_mode = sceKernelIsNeoMode() != 0;
++   ac_ps4_pro_level = ps4_neo_mode ? CLAMP(level, 0, 2) : 0;
++}
++
+ int sceKernelAllocateDirectMemory(off_t search_start, off_t search_end, size_t len, size_t align,
+                                   int type, off_t *phys);
+ int sceKernelReleaseDirectMemory(off_t start, size_t len);
+@@ -919,6 +943,13 @@
+ 
+    if (!ps4_load_gnm(dev))
+       goto fail;
++   ps4_read_pro_level();
++   ps4_log("radv/ps4: PS4 Pro enhanced mode %s, direct memory %llu MiB, GPU layout level %d (%s)\n",
++           ps4_neo_mode ? "ON" : "off", (unsigned long long)(sceKernelGetDirectMemorySize() >> 20),
++           ac_ps4_pro_level,
++           ac_ps4_pro_level >= 2 ? "Pro: 4 SEs, 36 CUs, Pro raster setup"
++           : ac_ps4_pro_level == 1 ? "Pro: 4 SEs, 36 CUs, base raster setup"
++                                   : "base PS4: 2 SEs, 18 CUs");
+    dev->va_start = ps4_reserve_window(PS4_VA_SIZE, 0x200000);
+    /* The kernel rejects a 4 GiB alignment (EINVAL): reserve twice the size and use the 4 GiB
+     * aligned half inside it (the rest stays reserved, unused). */
+@@ -2615,7 +2646,21 @@
+  * Queries: answer as the amdgpu kernel would for a Liverpool-like gfx7 APU
+  */
+ 
+-#define PS4_VRAM_SIZE (2048ull << 20)
++/* 2 GiB of "VRAM" on a console that gives the app 4.5 GiB of direct memory; one that gives more
++ * (the PS4 Pro's enhanced mode) adds the difference, up to 3 GiB in all, so Eden's texture cache
++ * (sized from this heap) can use it. */
++static uint64_t
++ps4_vram_size(void)
++{
++   static uint64_t size;
++   if (!size) {
++      const uint64_t base = 4608ull << 20, total = sceKernelGetDirectMemorySize();
++      const uint64_t extra = total > base ? (total - base) & ~((256ull << 20) - 1) : 0;
++      size = (2048ull << 20) + MIN2(extra, 1024ull << 20);
++   }
++   return size;
++}
++#define PS4_VRAM_SIZE ps4_vram_size()
+ #define PS4_GTT_SIZE (1024ull << 20)
+ 
+ int
+@@ -2639,6 +2684,12 @@
+    memcpy(info->gb_macro_tile_mode, ps4_macrotile_modes, sizeof(ps4_macrotile_modes));
+    info->cu_bitmap[0][0] = 0x1ff; /* 9 CUs per shader engine, 18 total */
+    info->cu_bitmap[1][0] = 0x1ff;
++   if (ac_ps4_pro_level >= 1) { /* the Pro: the same again, mirrored */
++      info->num_shader_engines = 4;
++      info->cu_bitmap[2][0] = 0x1ff;
++      info->cu_bitmap[3][0] = 0x1ff;
++      info->max_engine_clk = 911000;
++   }
+    info->vram_type = AMDGPU_VRAM_TYPE_GDDR5;
+    info->vram_bit_width = 256;
+    return 0;
+@@ -2659,6 +2710,13 @@
+    d->cu_active_number = 18;
+    d->cu_bitmap[0][0] = 0x1ff;
+    d->cu_bitmap[1][0] = 0x1ff;
++   if (ac_ps4_pro_level >= 1) {
++      d->num_shader_engines = 4;
++      d->max_engine_clock = 911000;
++      d->cu_active_number = 36;
++      d->cu_bitmap[2][0] = 0x1ff;
++      d->cu_bitmap[3][0] = 0x1ff;
++   }
+    d->enabled_rb_pipes_mask = 0xff;
+    d->num_rb_pipes = 8;
+    d->num_hw_gfx_contexts = 8;

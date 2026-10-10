@@ -16,6 +16,11 @@ if [ ! -d "$SRC/mesa/.git" ]; then
     git -C "$SRC/mesa" apply "$DPS4/patches/mesa-ps4.patch"
     git -C "$SRC/mesa" -c user.name=edenps4 -c user.email=edenps4@localhost commit -qam "DolphinPS4 mesa-ps4.patch"
 fi
+# Our own changes on top (patches/): the PS4 Pro experiment's raster setup.
+if ! git -C "$SRC/mesa" log --format=%s | grep -q "^PS4 Pro experiment"; then
+    git -C "$SRC/mesa" apply /work/patches/mesa-ps4-pro.patch
+    git -C "$SRC/mesa" -c user.name=edenps4 -c user.email=edenps4@localhost commit -qam "PS4 Pro experiment (patches/mesa-ps4-pro.patch)"
+fi
 if [ ! -d "$SRC/libdrm" ]; then
     git clone --depth 1 --branch "libdrm-$LIBDRM_VER" https://gitlab.freedesktop.org/mesa/drm.git "$SRC/libdrm"
 fi
@@ -26,6 +31,7 @@ mkdir -p /build/mesa-venv/bin /build/host-tools/bin
 # gpu-hang.txt, flight/) in /data/switch-emu/logs instead of /data/DolphinPS4.
 rm -rf /build/dps4-mesa && mkdir -p /build/dps4-mesa
 cp -a "$DPS4/scripts" "$DPS4/port" "$DPS4/toolchain" /build/dps4-mesa/
+patch -s -p1 -d /build/dps4-mesa < /work/patches/ac_ps4_drm-pro.patch # PS4 Pro levels (gpu-pro.txt)
 sed -i 's#/data/DolphinPS4#/data/switch-emu/logs#g' /build/dps4-mesa/port/mesa/ac_ps4_drm.c
 /build/dps4-mesa/scripts/build-mesa.sh "${1:-}"
 ls -la /build/build/mesa/src/amd/vulkan/libvulkan_radeon.a

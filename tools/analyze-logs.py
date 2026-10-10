@@ -101,6 +101,11 @@ def main():
         for t, ms in sorted(builds, key=lambda b: -b[1])[:5]:
             print(f"  {t:8.1f} s  {ms:5d} ms")
 
+    radv = read(os.path.join(folder, "radv-ps4.log"))
+    pro = [l.strip() for l in radv if "PS4 Pro enhanced mode" in l]
+    if pro:
+        print("\n== " + pro[-1].split("radv/ps4: ", 1)[-1])
+
     emulator = read(os.path.join(folder, "emulator.log"))
     skipped = [l for l in emulator if "PS4: skipping draws" in l]
     if skipped:
