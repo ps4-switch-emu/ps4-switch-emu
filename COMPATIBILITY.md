@@ -17,6 +17,7 @@ PS4; a game that isn't listed hasn't been tested yet, it isn't necessarily broke
 
 | Game | Title ID | Status | Notes |
 |---|---|---|---|
+| PICO PARK | 01004EA00DF70000 | **Playable** | Full 60 fps. Has frozen once during play; being looked into (an emulator problem, not specific to the game). |
 | Super Meat Boy | 01004F8006A78000 | **Playable** | About 30-60 fps on a PS4 Pro. |
 
 ## Testing setup
