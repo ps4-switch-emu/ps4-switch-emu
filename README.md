@@ -23,6 +23,7 @@ emulator, with a console launcher built for the TV.
 ## Contents
 
 - [What works](#what-works)
+- [Game compatibility](COMPATIBILITY.md)
 - [What you need](#what-you-need)
 - [Installing](#installing)
 - [Setting up your games](#setting-up-your-games)
@@ -42,6 +43,8 @@ emulator, with a console launcher built for the TV.
 | Saves | Yes, plus a one-button backup |
 | Updates and DLC | Installable from the launcher |
 | Performance | Light 2D games are playable (about 30-60 fps); heavier 3D games are largely untested and expected to be slow |
+
+Which games have been tested, and how well they run: [COMPATIBILITY.md](COMPATIBILITY.md).
 
 Tested on a PS4 Pro (firmware 13.02, GoldHEN). Other models and firmwares supported by GoldHEN
 should work, but the base PS4 and PS4 Slim have a slower CPU and GPU and are untested.
