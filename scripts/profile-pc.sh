@@ -24,9 +24,9 @@ GFX="${5:-}"
 if [ "${JITDUMP:-}" = 1 ]; then
     export PERF_BUILDID_DIR=/tmp EDEN_JIT_DUMP=/build/pc-jit.dump
 fi
-EDEN=/build/build/eden-linux/bin/eden-cli
+EDEN="${EDEN:-/build/build/eden-linux/bin/eden-cli}" # EDEN=<path>: another build (e.g. eden-linux-libcxx)
 export HOME=/build/pc-bench-home XDG_DATA_HOME=/build/pc-bench-home/data XDG_CONFIG_HOME=/build/pc-bench-home/config
-export EDEN_FORCE_PT_SIGN_EXTENSION=1
+[ -n "${EDEN_NO_PT_SIGN:-}" ] || export EDEN_FORCE_PT_SIGN_EXTENSION=1 # EDEN_NO_PT_SIGN=1: the PC's own layout
 # The JIT emits code for the PS4's Jaguar cores (no AVX2/FMA/BMI2) unless EDEN_HOST_FEATURES= is set empty.
 export EDEN_HOST_FEATURES="${EDEN_HOST_FEATURES-jaguar}"
 export SDL_AUDIO_DRIVER=dummy
@@ -55,6 +55,8 @@ mkdir -p "$XDG_CONFIG_HOME/eden"
 set_cfg() { sed -i -E "s/^$1\\\\default=.*/$1\\\\default=false/; s/^$1=.*/$1=$2/" "$CFG"; }
 set_cfg use_multi_core true
 set_cfg cpu_accuracy "${CPU_ACCURACY:-0}" # 0 Auto (the default), 1 Accurate, 2 Unsafe
+set_cfg gpu_accuracy "${GPU_ACCURACY:-1}" # 0 Low (what the PS4 uses), 1 High
+set_cfg accelerate_astc "${ASTC_MODE:-1}" # 0 CPU, 1 GPU (compute shader), 2 CPU asynchronous
 set_cfg cpuopt_unsafe_host_mmu true
 set_cfg log_filter '"*:Warning"'
 if [ "$GFX" = gfx ]; then

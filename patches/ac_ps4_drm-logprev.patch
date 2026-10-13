@@ -1,0 +1,15 @@
+--- a/port/mesa/ac_ps4_drm.c	2026-10-11 23:08:53
++++ b/port/mesa/ac_ps4_drm.c	2026-10-11 23:08:54
+@@ -265,8 +265,11 @@
+    sceKernelDebugOutText(0, line);
+    /* Also straight to a file: the app may not route stderr anywhere. */
+    static int fd = -2;
+-   if (fd == -2)
++   if (fd == -2) {
++      /* Keep the last run's log: after a crash the launcher starts again and would overwrite it. */
++      rename("/data/DolphinPS4/radv-ps4.log", "/data/DolphinPS4/radv-ps4.prev.log");
+       fd = open("/data/DolphinPS4/radv-ps4.log", O_WRONLY | O_CREAT | O_TRUNC, 0666);
++   }
+    if (fd >= 0)
+       write(fd, line, strlen(line));
+ }

@@ -1,0 +1,42 @@
+--- a/port/mesa/ac_ps4_drm.c	2026-10-11 11:19:02
++++ b/port/mesa/ac_ps4_drm.c	2026-10-11 11:19:02
+@@ -2376,6 +2376,16 @@
+ }
+ 
+ /* Waits on handles/points; `points` NULL = binary. */
++/* A wait the winsys refuses (Vulkan reports VK_ERROR_UNKNOWN): say which check and what for. */
++static void
++ps4_wait_einval(const char *why, uint32_t handle, uint64_t point, uint64_t payload, unsigned flags)
++{
++   static unsigned logged;
++   if (logged++ < 16)
++      ps4_log("radv/ps4: wait refused (%s): sync object %u, point %llu, payload %llu, flags %#x\n", why,
++              handle, (unsigned long long)point, (unsigned long long)payload, flags);
++}
++
+ static int
+ ps4_wait_common(ac_drm_device *dev, uint32_t *handles, uint64_t *points, unsigned count,
+                 int64_t abs_timeout, unsigned flags, uint32_t *first)
+@@ -2392,18 +2402,22 @@
+          struct ps4_syncobj *s = ps4_syncobj(dev, handles[i]);
+          if (!s) {
+             simple_mtx_unlock(&dev->lock);
++            ps4_wait_einval("no such sync object", handles[i], 0, 0, flags);
+             return -EINVAL;
+          }
+          bool ok;
+          if (points && points[i]) {
+             ok = available ? ps4_point_submitted(s, points[i]) : ps4_payload(dev, s) >= points[i];
+             if (!ok && !for_submit && !ps4_point_submitted(s, points[i])) {
++               const uint64_t payload = ps4_payload(dev, s);
+                simple_mtx_unlock(&dev->lock);
++               ps4_wait_einval("timeline point not submitted yet", handles[i], points[i], payload, flags);
+                return -EINVAL;
+             }
+          } else {
+             if (!s->num_points && !for_submit) {
+                simple_mtx_unlock(&dev->lock);
++               ps4_wait_einval("binary sync object never submitted", handles[i], 0, 0, flags);
+                return -EINVAL;
+             }
+             ok = available ? s->num_points > 0 : ps4_binary_signalled(dev, s);

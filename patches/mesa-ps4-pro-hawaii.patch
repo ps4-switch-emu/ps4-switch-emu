@@ -1,0 +1,59 @@
+diff --git a/src/amd/vulkan/radv_cmd_buffer.c b/src/amd/vulkan/radv_cmd_buffer.c
+index 46373c4..3c0ad13 100644
+--- a/src/amd/vulkan/radv_cmd_buffer.c
++++ b/src/amd/vulkan/radv_cmd_buffer.c
+@@ -46,6 +46,15 @@
+ #include "compiler/shader_info.h"
+ #include "util/compiler.h"
+ #include "util/fast_idiv_by_const.h"
++/* The PS4 Pro's GPU in its enhanced mode (the PS4 winsys reports it as Bonaire with 4 shader
++ * engines): a 4-SE GFX7 part like Hawaii, and it hangs its work distributor the same way without
++ * Hawaii's IA/WD workarounds (seen on hardware: WD/IA/VGT/PA busy, SC idle, at the first draws). */
++static inline bool
++radv_hawaii_like(const struct radeon_info *gpu_info)
++{
++   return gpu_info->family == CHIP_HAWAII || (gpu_info->family == CHIP_BONAIRE && gpu_info->max_se == 4);
++}
++
+ 
+ enum {
+    RADV_PREFETCH_VBO_DESCRIPTORS = (1 << 0),
+@@ -6978,7 +6987,7 @@ radv_get_ia_multi_vgt_param(struct radv_cmd_buffer *cmd_buffer, bool instanced_d
+       /* Hawaii hangs if instancing is enabled and WD_SWITCH_ON_EOP is 0.
+        * We don't know that for indirect drawing, so treat it as
+        * always problematic. */
+-      if (gpu_info->family == CHIP_HAWAII) {
++      if (radv_hawaii_like(gpu_info)) {
+          if (instanced_draw || indirect_draw)
+             wd_switch_on_eop = true;
+ 
+@@ -7012,7 +7021,7 @@ radv_get_ia_multi_vgt_param(struct radv_cmd_buffer *cmd_buffer, bool instanced_d
+ 
+       /* Required by Hawaii and, for some special cases, by GFX8. */
+       if (ia_switch_on_eoi &&
+-          (gpu_info->family == CHIP_HAWAII ||
++          (radv_hawaii_like(gpu_info) ||
+            (gpu_info->gfx_level == GFX8 &&
+             /* max primgroup in wave is always 2 - leave this for documentation */
+             (radv_cmdbuf_has_stage(cmd_buffer, MESA_SHADER_GEOMETRY) || max_primgroup_in_wave != 2))))
+@@ -7034,7 +7043,7 @@ radv_get_ia_multi_vgt_param(struct radv_cmd_buffer *cmd_buffer, bool instanced_d
+        * The hw doc says all multi-SE chips are affected, but amdgpu-pro Vulkan
+        * only applies it to Hawaii. Do what amdgpu-pro Vulkan does.
+        */
+-      if (gpu_info->family == CHIP_HAWAII && ia_switch_on_eoi) {
++      if (radv_hawaii_like(gpu_info) && ia_switch_on_eoi) {
+          bool set_vgt_flush = indirect_draw;
+          if (!set_vgt_flush && instanced_draw) {
+             uint32_t num_prims = radv_prims_for_vertices(&prim_vertex_count, draw_vertex_count);
+@@ -12970,7 +12979,7 @@ radv_after_draw(struct radv_cmd_buffer *cmd_buffer, bool dgc)
+     * It must be done after drawing.
+     */
+    if (radv_is_streamout_enabled(cmd_buffer) &&
+-       (gpu_info->family == CHIP_HAWAII || gpu_info->family == CHIP_TONGA || gpu_info->family == CHIP_FIJI)) {
++       (radv_hawaii_like(gpu_info) || gpu_info->family == CHIP_TONGA || gpu_info->family == CHIP_FIJI)) {
+       cmd_buffer->state.flush_bits |= RADV_CMD_FLAG_VGT_STREAMOUT_SYNC;
+    }
+ 
+53:radv_hawaii_like(const struct radeon_info *gpu_info)
+6990:      if (radv_hawaii_like(gpu_info)) {
+7024:          (radv_hawaii_like(gpu_info) ||

@@ -1,0 +1,39 @@
+--- a/port/mesa/ac_ps4_drm.c	2026-10-11 23:10:14
++++ b/port/mesa/ac_ps4_drm.c	2026-10-11 23:10:14
+@@ -2406,6 +2406,7 @@
+          if (!s) {
+             simple_mtx_unlock(&dev->lock);
+             ps4_wait_einval("no such sync object", handles[i], 0, 0, flags);
++            errno = EINVAL; /* Mesa reads errno, as libdrm leaves it */
+             return -EINVAL;
+          }
+          bool ok;
+@@ -2415,12 +2416,14 @@
+                const uint64_t payload = ps4_payload(dev, s);
+                simple_mtx_unlock(&dev->lock);
+                ps4_wait_einval("timeline point not submitted yet", handles[i], points[i], payload, flags);
++               errno = EINVAL; /* Mesa reads errno, as libdrm leaves it */
+                return -EINVAL;
+             }
+          } else {
+             if (!s->num_points && !for_submit) {
+                simple_mtx_unlock(&dev->lock);
+                ps4_wait_einval("binary sync object never submitted", handles[i], 0, 0, flags);
++               errno = EINVAL; /* Mesa reads errno, as libdrm leaves it */
+                return -EINVAL;
+             }
+             ok = available ? s->num_points > 0 : ps4_binary_signalled(dev, s);
+@@ -2437,8 +2440,12 @@
+             *first = first_done == ~0u ? 0 : first_done;
+          return 0;
+       }
+-      if (abs_timeout <= 0 || (abs_timeout != INT64_MAX && os_time_get_nano() >= abs_timeout))
++      if (abs_timeout <= 0 || (abs_timeout != INT64_MAX && os_time_get_nano() >= abs_timeout)) {
++         /* Mesa tells a timeout (VK_TIMEOUT) from a failure (VK_ERROR_UNKNOWN) by errno == ETIME,
++          * as libdrm leaves it: without it every wait that timed out was a fatal error. */
++         errno = ETIME;
+          return -ETIME;
++      }
+       if (!wait_start)
+          wait_start = os_time_get_nano();
+       else if (os_time_get_nano() - wait_start > 2000000000ll && ps4_completed(dev) < dev->last_seq)

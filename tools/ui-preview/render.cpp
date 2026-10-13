@@ -24,6 +24,9 @@ void ps4_sound_close() {}
 #include <atomic>
 std::atomic<unsigned long long> ps4_pipelines_built{0}; // stub.cpp on the PS4
 
+// The icon resizer (on the console it comes from Eden's common library).
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include "stb_image_resize.h"
 #include "status_screen.cpp"
 #include <vector>
 #include <thread>
@@ -328,6 +331,9 @@ int main(int argc, char** argv) {
         g_load.stage_time -= 75;
         ps4_pipelines_built += 212;
         shot("08c-loading-first-start");
+        ps4_loading_failed("Nothing has happened for 30 seconds.\nIts logs are in /data/switch-emu/logs.");
+        shot("08d-loading-failed");
+        g_load.failed = false;
     }
 
     // Home menu over a stand-in game frame.
